@@ -40,6 +40,7 @@ class QuadGantryLevel:
         if len(self.gantry_corners) < 2:
             raise config.error(
                 "quad_gantry_level requires at least two gantry_corners")
+        self.fuzz_points = config.getboolean("fuzz_points", False)
         # Register QUAD_GANTRY_LEVEL command
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode.register_command(
@@ -50,6 +51,10 @@ class QuadGantryLevel:
     def cmd_QUAD_GANTRY_LEVEL(self, gcmd):
         self.z_status.reset()
         self.retry_helper.start(gcmd)
+        if self.fuzz_points:
+            oldpoints = self.probe_helper.probe_points
+            newpoints = self.probe_helper.fuzz_probe_points(oldpoints)
+            self.probe_helper.update_probe_points(newpoints, 4)
         self.probe_helper.start_probe(gcmd)
     def probe_finalize(self, offsets, positions):
         # Mirror our perspective so the adjustments make sense

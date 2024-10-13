@@ -759,7 +759,7 @@ class BedMeshCalibrate:
                 right_buffer = [row[row_size-1]] * buf_cnt
                 row[0:0] = left_buffer
                 row.extend(right_buffer)
-
+                
         #  make sure that the x-axis is the correct length
         for row in probed_matrix:
             if len(row) != x_cnt:
@@ -821,7 +821,7 @@ class ProbeManager:
         self.probe_helper.use_xy_offsets(True)
         self.rapid_scan_helper = RapidScanHelper(config, self, finalize_cb)
         self._init_faulty_regions(config)
-
+        self.fuzz_points = config.getboolean("fuzz_points", False)
     def _init_faulty_regions(self, config):
         for i in list(range(1, 100, 1)):
             start = config.getfloatlist("faulty_region_%d_min" % (i,), None,
@@ -935,7 +935,10 @@ class ProbeManager:
         else:
             # Zero Reference position outside of mesh
             self.zref_mode = ZrefMode.PROBE
-        self.base_points = points
+        if self.fuzz_points:
+            self.base_points = self.probe_helper.fuzz_probe_points(points)
+        else:
+            self.base_points = points
         self.substitutes.clear()
         # adjust overshoot
         og_min_x = self.orig_config["mesh_min"][0]

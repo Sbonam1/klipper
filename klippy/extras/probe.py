@@ -5,6 +5,7 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import logging
 import pins
+import random
 from . import manual_probe
 
 HINT_TIMEOUT = """
@@ -393,10 +394,42 @@ class ProbePointsHelper:
         self.default_horizontal_move_z = def_move_z
         self.speed = config.getfloat('speed', 50., above=0.)
         self.use_offsets = False
+        self.fuzz_points = config.getboolean('fuzz_points', False)
+        if self.fuzz_points:
+            self.fuzz_amount = config.getfloat('fuzz_amount', 5.)
+            self.x_max = config.getsection('stepper_x').getfloat('position_max')
+            self.y_max = config.getsection('stepper_y').getfloat('position_max')
         # Internal probing state
         self.lift_speed = self.speed
         self.probe_offsets = (0., 0., 0.)
         self.manual_results = []
+    def fuzz_probe_points(self, points):
+        logging.info("Fuzzing probe Points.")
+        logging.info(points)
+        tries = 0
+        while True:
+            x_adj = round(random.uniform(0, self.fuzz_amount),2)
+            y_adj = round(random.uniform(0, self.fuzz_amount),2)
+            fuzzy_probe_points = list(map(list, points))
+            if tries > 3:
+                msg = "fuzz_points failed, adjust fuzz_amount."
+                raise self.printer.config_error(msg)
+            for i in range(len(fuzzy_probe_points)):
+                fuzzy_probe_points[i][0] = fuzzy_probe_points[i][0] + x_adj
+                fuzzy_probe_points[i][1] = fuzzy_probe_points[i][1] + y_adj
+            failed = False
+            for i in range(len(self.probe_points)):
+                if fuzzy_probe_points[i][0] > self.x_max:
+                    failed = True
+                    break
+                if fuzzy_probe_points[i][1] > self.y_max:
+                    failed = True
+                    break
+            if failed:
+                tries += 1
+                continue
+            else:
+               return fuzzy_probe_points
     def minimum_points(self,n):
         if len(self.probe_points) < n:
             raise self.printer.config_error(

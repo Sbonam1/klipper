@@ -418,7 +418,7 @@ class ProbePointsHelper:
                 fuzzy_probe_points[i][0] = fuzzy_probe_points[i][0] + x_adj
                 fuzzy_probe_points[i][1] = fuzzy_probe_points[i][1] + y_adj
             failed = False
-            for i in range(len(self.probe_points)):
+            for i in range(len(fuzzy_probe_points)):
                 if fuzzy_probe_points[i][0] > self.x_max:
                     failed = True
                     break
